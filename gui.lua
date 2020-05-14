@@ -28,8 +28,13 @@ end
 
 function crafting.make_result_selector(player, type, level, size, context)
 	local page = context.crafting_page or 1
-
-	local full_recipes = crafting.get_all_for_player(player, type, level)
+	
+	if(context.craftable_only == nil) then
+		context.craftable_only = false
+	end 
+	
+	local full_recipes = crafting.get_all_for_player(player, type, level, context.craftable_only)
+	
 	local recipes
 	if context.crafting_query then
 		recipes = {}
@@ -46,13 +51,12 @@ function crafting.make_result_selector(player, type, level, size, context)
 		recipes = full_recipes
 	end
 
-
 	local num_per_page = size.x * size.y
 	local max_pages = math.floor(0.999 + #recipes / num_per_page)
 	if page > max_pages or page < 1 then
 		page = ((page - 1) % max_pages) + 1
 		context.crafting_page = page
-	end
+	end	
 
 	local start_i  = (page - 1) * num_per_page + 1
 
@@ -70,6 +74,7 @@ function crafting.make_result_selector(player, type, level, size, context)
 	formspec[#formspec + 1] = "field[-4.75,0.81;3,0.8;query;;"
 	formspec[#formspec + 1] = context.crafting_query
 	formspec[#formspec + 1] = "]button[-2.2,0.5;0.8,0.8;search;?]"
+	formspec[#formspec + 1] = "button[-7,0.5;2,0.8;craftable_only;Toggle Craftable]" 
 	formspec[#formspec + 1] = "button[-1.4,0.5;0.8,0.8;prev;<]"
 	formspec[#formspec + 1] = "button[-0.8,0.5;0.8,0.8;next;>]"
 
@@ -88,6 +93,11 @@ function crafting.make_result_selector(player, type, level, size, context)
 	for i = start_i, math.min(#recipes, start_i * num_per_page)  do
 		local result = recipes[i]
 		local recipe = result.recipe
+		
+		-- Don't show recipes that you don't have items to craft
+		if(context.craftable_only and not result.craftable) then
+			goto continue
+		end
 
 		local itemname = ItemStack(recipe.output):get_name()
 		local item_description = get_item_description(itemname)
@@ -137,6 +147,8 @@ function crafting.make_result_selector(player, type, level, size, context)
 		if y == size.y then
 			break
 		end
+		
+		::continue::
 	end
 
 	while y < size.y do
@@ -162,6 +174,10 @@ function crafting.result_select_on_receive_results(player, type, level, context,
 		return true
 	elseif fields.next then
 		context.crafting_page = (context.crafting_page or 1) + 1
+		return true
+	elseif fields.craftable_only then 		
+		context.craftable_only = not context.craftable_only
+		context.crafting_page  = 1
 		return true
 	elseif fields.search or fields.key_enter_field == "query" then
 		context.crafting_query = fields.query:trim():lower()
