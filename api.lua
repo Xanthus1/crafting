@@ -124,9 +124,11 @@ function crafting.get_recipe(id)
 	return crafting.recipes_by_id[id]
 end
 
-function crafting.get_all(type, level, item_hash, unlocked)
+function crafting.get_all(type, level, item_hash, unlocked, craftable_only) 
 	assert(crafting.recipes[type], "No such craft type!")
 
+	craftable_only = craftable_only or false 
+	
 	local results = {}
 
 	for _, recipe in pairs(crafting.recipes[type]) do
@@ -150,12 +152,14 @@ function crafting.get_all(type, level, item_hash, unlocked)
 					need = needed_count,
 				}
 			end
-
-			results[#results + 1] = {
-				recipe    = recipe,
-				items     = items,
-				craftable = craftable,
-			}
+							
+			if(not craftable_only or craftable) then
+				results[#results + 1] = {
+					recipe    = recipe,
+					items     = items,
+					craftable = craftable,
+				}
+			end
 		end
 	end
 
@@ -179,14 +183,16 @@ function crafting.set_item_hashes_from_list(inv, listname, item_hash)
 	end
 end
 
-function crafting.get_all_for_player(player, type, level)
+function crafting.get_all_for_player(player, type, level, craftable_only)
 	local unlocked = crafting.get_unlocked(player:get_player_name())
+	
+	local craftable_only = craftable_only or false
 
 	-- Get items hashed
 	local item_hash = {}
 	crafting.set_item_hashes_from_list(player:get_inventory(), "main", item_hash)
 
-	return crafting.get_all(type, level, item_hash, unlocked)
+	return crafting.get_all(type, level, item_hash, unlocked, craftable_only)
 end
 
 function crafting.can_craft(name, type, level, recipe)
