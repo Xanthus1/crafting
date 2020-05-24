@@ -27,12 +27,10 @@ local function get_item_description(name)
 end
 
 function crafting.make_result_selector(player, type, level, size, context)
-	local page = context.crafting_page or 1
+	local page = context.crafting_page or 1	
 	
-	if(context.craftable_only == nil) then
-		context.craftable_only = false
-	end 
-	
+	context.craftable_only = context.craftable_only or false
+		
 	local full_recipes = crafting.get_all_for_player(player, type, level, context.craftable_only)
 	
 	local recipes
@@ -51,12 +49,17 @@ function crafting.make_result_selector(player, type, level, size, context)
 		recipes = full_recipes
 	end
 
+
 	local num_per_page = size.x * size.y
 	local max_pages = math.floor(0.999 + #recipes / num_per_page)
 	if page > max_pages or page < 1 then
 		page = ((page - 1) % max_pages) + 1
 		context.crafting_page = page
 	end	
+	if max_pages == 0 then
+		page = 0
+		context.crafting_page = 0
+	end
 
 	local start_i  = (page - 1) * num_per_page + 1
 
